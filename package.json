@@ -1,12 +1,13 @@
 {
   "name": "metalsmith-watch",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "metalsmith watch plugin, trigger rebuilds on file change",
   "main": "lib/index.js",
   "scripts": {
     "test": "cd test && mocha test"
   },
   "author": "Fabrice Weinberg",
+  "repository": "https://github.com/FWeinb/metalsmith-watch",
   "license": "MIT",
   "dependencies": {
     "gaze": "^0.5.1",
