@@ -1,6 +1,6 @@
 # metalsmith-watch
 
-  A metalsmith plugin to watch the `src`folder for a change and trigger rebuilds.
+  A metalsmith plugin to watch for a changes and trigger rebuilds.
 
 ## Installation
 
