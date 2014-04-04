@@ -1,14 +1,25 @@
+/* globals describe, beforeEach, it, after */
+'use strict';
+
 var fs         = require('fs');
 
 var assert     = require('assert');
-var resolve    = require('path').resolve;
 var rm         = require('rimraf').sync;
 var mkdirp     = require('mkdirp').sync;
 
 var Metalsmith = require('metalsmith');
-var markdown   = require('metalsmith-markdown');
 var watch      = require('..');
 
+function createMetalsmith(done){
+  var m = new Metalsmith(__dirname);
+  m.source('./tmp/src')
+   .destination('./tmp/dest')
+   .use(watch)
+   .build(function(){
+      done(m);
+    });
+  return m;
+}
 
 describe('metalsmith-watch', function(){
 
@@ -20,7 +31,6 @@ describe('metalsmith-watch', function(){
 
   it('should rebuild on file creation', function(done){
     var assertion = function ( files ){
-      // Assert that test file exists
       assert( files.test !== undefined);
       done();
     };
@@ -38,13 +48,3 @@ describe('metalsmith-watch', function(){
 
 });
 
-function createMetalsmith(done){
-  var m = new Metalsmith(__dirname);
-  m.source('./tmp/src')
-   .destination('./tmp/dest')
-   .use(watch)
-   .build(function(){
-     done(m);
-   });
-  return m;
-}
