@@ -40,7 +40,7 @@ Default value: `'**/*'`
 
 A glob pattern that is used for watching.
 
-#### livereload
+### livereload
 Type: `Boolean|Number|Object`
 Default: false
 
