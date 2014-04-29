@@ -1,4 +1,4 @@
-# metalsmith-watch
+# metalsmith-watch [![NPM version](https://badge.fury.io/js/metalsmith-watch.svg)](http://badge.fury.io/js/metalsmith-watch) [![Build Status](https://travis-ci.org/FWeinb/metalsmith-watch.svg?branch=master)](https://travis-ci.org/FWeinb/metalsmith-watch)
 
   A metalsmith plugin to watch for a changes and trigger rebuilds.
 
