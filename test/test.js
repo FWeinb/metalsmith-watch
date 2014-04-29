@@ -2,7 +2,7 @@
 'use strict';
 
 var fs         = require('fs');
-
+var resolve    = require('path').resolve;
 var assert     = require('assert');
 var rm         = require('rimraf').sync;
 var mkdirp     = require('mkdirp').sync;
@@ -11,13 +11,13 @@ var Metalsmith = require('metalsmith');
 var watch      = require('..');
 
 function createMetalsmith(done){
-  var m = new Metalsmith(__dirname);
-  m.source('./tmp/src')
-   .destination('./tmp/dest')
-   .use(watch)
-   .build(function(){
-      done(m);
-    });
+  var m = Metalsmith('./tmp');
+
+  m.use(watch())
+   .build(function(files){
+     done(m);
+   });
+
   return m;
 }
 
@@ -30,6 +30,7 @@ describe('metalsmith-watch', function(){
   });
 
   it('should rebuild on file creation', function(done){
+
     var assertion = function ( files ){
       assert( files.test !== undefined);
       done();
@@ -37,13 +38,28 @@ describe('metalsmith-watch', function(){
 
     createMetalsmith(function(metalsmith){
       metalsmith.use( assertion );
-      fs.writeFile('./tmp/src/test', '');
+      fs.writeFile('./tmp/src/test', 'Test');
+    });
+  });
+
+  it('should keep track of renamed files', function(done){
+    var assertion = function ( files ){
+      assert( files.renamed !== undefined);
+      done();
+    };
+
+    createMetalsmith(function(metalsmith){
+      metalsmith.use( assertion );
+      fs.rename('./tmp/src/dummy', './tmp/src/renamed', function(){});
     });
   });
 
   // Clean up
-  after(function(){
+  afterEach(function(){
+    // remove the tmp
     rm('./tmp');
+    // Reset the watching
+    watch.reset();
   });
 
 });

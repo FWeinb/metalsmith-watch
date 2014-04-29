@@ -1,6 +1,6 @@
 {
   "name": "metalsmith-watch",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "description": "metalsmith watch plugin, trigger rebuilds on file change",
   "main": "lib/index.js",
   "scripts": {
@@ -18,7 +18,7 @@
     "lodash": "^2.4.1"
   },
   "devDependencies": {
-    "metalsmith": "^0.3.0",
+    "metalsmith": "^0.6.1",
     "mocha": "^1.17.1",
     "assert": "^1.1.1",
     "rimraf": "^2.2.6",

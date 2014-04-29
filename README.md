@@ -13,11 +13,11 @@ var metalsmith = require('metalsmith');
 var watch = require('metalsmith-watch');
 
 metalsmith
-  .use(watch)
+  .use(watch())
   .build();
 ```
 
-This will start watching the `metalsmith.source()` directory and all sub directorys.
+This will start watching the `metalsmith.source()` directory and all sub directorys (`**/*` glob).
 
 ## Advanced example
 
@@ -63,10 +63,11 @@ metalsmith
 
 ## History
   
-  * 0.0.4 Added support for `livereload` closing Issue [#3](../../issues/3).
-  * 0.0.3 Fix bug introduced in [segmentio/metalsmith@`15d43a7`](https://github.com/segmentio/metalsmith/commit/15d43a77734067f2f958ad198884d06dde5ac15f) via PR [#1](../../pull/1)
-  * 0.0.2 Fix repositiory url in `package.json`
-  * 0.0.1 Release 
+  * `0.1.0` To conform to other plugins watch must be used like `watch()` now. Keep track of renamed files correctly, closing Issue [#5](../../issues/5) 
+  * `0.0.4` Added support for `livereload` closing Issue [#3](../../issues/3).
+  * `0.0.3` Fix bug introduced in [segmentio/metalsmith@`15d43a7`](https://github.com/segmentio/metalsmith/commit/15d43a77734067f2f958ad198884d06dde5ac15f) via PR [#1](../../pull/1)
+  * `0.0.2 Fix repositiory url in `package.json`
+  * `0.0.1` Release 
 
 ## License
 
