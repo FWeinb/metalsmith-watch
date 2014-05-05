@@ -26,7 +26,7 @@ var metalsmith = require('metalsmith');
 var watch = require('metalsmith-watch');
 
 metalsmith
-  .use(watch('*.md'))
+  .use(watch(['*.md']))
   .build();
 ```
 
