@@ -1,8 +1,7 @@
-/* globals describe, beforeEach, it, after */
+/* globals describe, beforeEach, it, afterEach */
 'use strict';
 
 var fs         = require('fs');
-var resolve    = require('path').resolve;
 var assert     = require('assert');
 var rm         = require('rimraf').sync;
 var mkdirp     = require('mkdirp').sync;
@@ -10,11 +9,11 @@ var mkdirp     = require('mkdirp').sync;
 var Metalsmith = require('metalsmith');
 var watch      = require('..');
 
-function createMetalsmith(done){
-  var m = Metalsmith('./tmp');
+function createMetalsmith(done, pattern){
+  var m = new Metalsmith('./tmp');
 
-  m.use(watch())
-   .build(function(files){
+  m.use(watch(pattern))
+   .build(function(){
      done(m);
    });
 
@@ -52,6 +51,30 @@ describe('metalsmith-watch', function(){
       metalsmith.use( assertion );
       fs.rename('./tmp/src/dummy', './tmp/src/renamed', function(){});
     });
+  });
+
+  it('should take a pattern string', function(done){
+    var assertion = function ( files ){
+      assert( files['markdown.md'] !== undefined);
+      done();
+    };
+
+    createMetalsmith(function(metalsmith){
+      metalsmith.use( assertion );
+      fs.writeFile('./tmp/src/markdown.md', '');
+    }, '*');
+  });
+
+  it('should take a pattern array', function(done){
+    var assertion = function ( files ){
+      assert( files['markdown.md'] !== undefined);
+      done();
+    };
+
+    createMetalsmith(function(metalsmith){
+      metalsmith.use( assertion );
+      fs.writeFile('./tmp/src/markdown.md', '');
+    }, ['*', '**/*']);
   });
 
   // Clean up
