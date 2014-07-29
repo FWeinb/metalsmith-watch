@@ -12,7 +12,7 @@
 var metalsmith = require('metalsmith');
 var watch = require('metalsmith-watch');
 
-metalsmith
+metalsmith(__dirname)
   .use(watch())
   .build();
 ```
@@ -25,7 +25,7 @@ This will start watching the `metalsmith.source()` directory and all sub directo
 var metalsmith = require('metalsmith');
 var watch = require('metalsmith-watch');
 
-metalsmith
+metalsmith(__dirname)
   .use(watch('*.md'))
   .build();
 ```
@@ -53,11 +53,11 @@ Example:
 var metalsmith = require('metalsmith');
 var watch = require('metalsmith-watch');
 
-metalsmith
+metalsmith(__dirname)
   .use(watch({
     pattern : '**/*',
     livereload: true
-  })
+  }))
   .build();
 ```
 
