@@ -48,6 +48,12 @@ Set to `true` or set `livereload: 1337` to a port number to enable live reloadin
 
 If enabled a live reload server will be started with the watch task per target. The live reload server will be triggered with the modified files.
 
+To get live reload working properly, you will need to add the following `script` tag to any file that you'd like live reloading to occur:
+
+`<script src="http://localhost:35729/livereload.js"></script>`
+
+Note that if you change the port for live reload in your build file, you'll need to use the same port in the script tag.
+
 Example:
 ```js
 var metalsmith = require('metalsmith');
