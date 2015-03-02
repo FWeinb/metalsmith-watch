@@ -68,7 +68,7 @@ metalsmith(__dirname)
 ```
 
 ## History
-
+  * `0.2.1` Use `.build` instead of `.run`. Update dependencies.
   * `0.2.0` Update to work with metalsmith `1.0`
   * `0.1.1` Add the ability to use an array to define multiple glob parameters.  
   * `0.1.0` To conform to other plugins watch must be used like `watch()` now. Keep track of renamed files correctly, closing Issue [#5](../../issues/5) 
