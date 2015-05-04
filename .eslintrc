@@ -25,3 +25,6 @@ rules:
 
   # enforce comma at eol (never before)
   comma-style: [2, "last"]
+
+  # metalsmith use _
+  no-underscore-dangle: 0

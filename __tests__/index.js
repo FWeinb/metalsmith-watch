@@ -1,5 +1,5 @@
 import fs from "fs"
-import path from "path"
+import {relative as relativePath} from "path"
 
 import tape from "tape"
 import {sync as rm} from "rimraf"
@@ -10,16 +10,20 @@ import Metalsmith from "metalsmith"
 import watch from "../src"
 
 const noop = () => {}
+const noopExceptErr = (err) => {
+  if (err) {throw err}
+  console.log("yep")
+}
 
 const closers = {}
 
 function cleanTests(key) {
   closers[key]()
-  rm(`./tmp-${key}`)
+  rm(`${__dirname}/tmp-${key}`)
 }
 
 function prepareTests(key, testCb, assertionCb, options) {
-  const folder = `./tmp-${key}`
+  const folder = `${__dirname}/tmp-${key}`
   const metalsmith = new Metalsmith(folder)
 
   rm(folder)
@@ -27,7 +31,7 @@ function prepareTests(key, testCb, assertionCb, options) {
   fs.writeFileSync(`${folder}/src/dummy`, "")
 
   const watcherOpts = {
-    log: noop,
+    // log: noop,
     ...options,
   }
 
@@ -38,7 +42,9 @@ function prepareTests(key, testCb, assertionCb, options) {
     () => {
       metalsmith
         .use(watch(watcherOpts))
-        .build(() => {
+        .build(err => {
+          if (err) {throw err}
+
           metalsmith
             .use((files) => {
               if (done) {
@@ -52,12 +58,11 @@ function prepareTests(key, testCb, assertionCb, options) {
                 setTimeout(() => cleanTests(key), 1000)
               }
             })
-          setTimeout(() => testCb(), 500)
+          setTimeout(() => testCb(), 1000)
         })
     },
-    500
+    1000
   )
-
 
   return folder
 }
@@ -69,13 +74,13 @@ tape("metalsmith-server/watcher", (test) => {
     const key = "logs"
     const folder = prepareTests(
       key,
-      () => fs.writeFile(`${folder}/src/test`, "Test", noop),
+      () => fs.writeFile(`${folder}/src/test`, "Test", noopExceptErr),
       () => {
         t.deepEqual(
           logs,
           [
-            "✔︎ Watching **/*",
-            "✔︎ test added",
+            "✔︎ Watching src/**/*",
+            "✔︎ src/test added",
             "- Updating 1 file...",
           ],
           "should logs things")
@@ -83,7 +88,7 @@ tape("metalsmith-server/watcher", (test) => {
       },
       {
         log: (log) => {
-          // console.log("## " + log)
+          console.log("## " + log)
           logs.push(chalk.stripColor(log))
         },
       }
@@ -94,7 +99,7 @@ tape("metalsmith-server/watcher", (test) => {
     const key = "create"
     const folder = prepareTests(
       key,
-      () => fs.writeFile(`${folder}/src/test`, "Test", noop),
+      () => fs.writeFile(`${folder}/src/test`, "Test", noopExceptErr),
       (files) => {
         t.ok(files.test, "should rebuild on file creation")
         t.end()
@@ -106,7 +111,7 @@ tape("metalsmith-server/watcher", (test) => {
     const key = "rename"
     const folder = prepareTests(
       key,
-      () => fs.rename(`${folder}/src/dummy`, `${folder}/src/renamed`, noop),
+      () => fs.rename(`${folder}/src/dummy`, `${folder}/src/renamed`, noopExceptErr),
       (files) => {
         t.ok(files.renamed, "should keep track of renamed files")
         t.end()
@@ -114,42 +119,45 @@ tape("metalsmith-server/watcher", (test) => {
     )
   })
 
-  // FIXME make this works on CI
-  if (!process.env.TRAVIS && !process.env.APPVEYOR) {
-    test.test("rebuild sibling mapping", (t) => {
-      const key = "sibling"
-      const sibling = `./tmp--sibling`
-      prepareTests(
-        key,
-        () => {
-          rm(sibling)
-          mkdirp(sibling)
-          fs.writeFile(`${sibling}/test`, "test", noop)
+  test.test("rebuild sibling mapping", (t) => {
+    const key = "sibling"
+    const siblingFolder = `${__dirname}/tmp-${key}/sibling`
+    prepareTests(
+      key,
+      () => {
+        rm(siblingFolder)
+        mkdirp(siblingFolder)
+        console.log("going to write", `${siblingFolder}/test`)
+        fs.writeFile(`${siblingFolder}/test`, "test", noopExceptErr)
+      },
+      () => {
+        t.pass("should rebuild if a mapped item get updated")
+        t.end()
+        setTimeout(() => rm(siblingFolder), 1000)
+      },
+      {
+        paths: {
+          "${source}/**/*": true,
+          "sibling/**/*": "**/*",
         },
-        () => {
-          t.pass("should rebuild if a mapped item get updated")
-          t.end()
-          setTimeout(() => rm(sibling), 500)
-        },
-        {
-          paths: {
-            "**/*": true,
-            [`${sibling}/**/*`]: "**/*",
-          },
-        }
-      )
-    })
-  }
+      }
+    )
+  })
 
   test.test("invalidate js cache", (t) => {
     const key = "cache"
     const folder = prepareTests(
       key,
       () => {
-        const jsfile = path.join(process.cwd(), `${folder}/src/dummy.js`)
-        fs.writeFile(jsfile, "module.exports = 1;", () => {
-          t.equal(require(jsfile), 1, "should get the exported value")
-          fs.writeFile(jsfile, "module.exports = 2;", () => {
+        const jsfile = `${folder}/src/thing.js`
+        console.log(jsfile, `./${relativePath(__dirname, folder)}/src/thing.js`)
+        fs.writeFile(jsfile, "module.exports = 1;", (err) => {
+          if (err) {throw err}
+
+          t.equal(require(`./${relativePath(__dirname, folder)}/src/thing.js`), 1, "should get the exported value")
+          fs.writeFile(jsfile, "module.exports = 2;", (err2) => {
+            if (err2) {throw err2}
+
             setTimeout(() => {
               t.equal(require(jsfile), 2, "should get the fresh exported value")
               t.end()
@@ -167,10 +175,14 @@ tape("metalsmith-server/watcher", (test) => {
     const folder = prepareTests(
       key,
       () => {
-        const jsfile = path.join(process.cwd(), `${folder}/src/dummy.js`)
-        fs.writeFile(jsfile, "module.exports = 1;", () => {
-          t.equal(require(jsfile), 1, "should get the exported value")
-          fs.writeFile(jsfile, "module.exports = 2;", () => {
+        const jsfile = `${folder}/src/thing.js`
+        fs.writeFile(jsfile, "module.exports = 1;", (err) => {
+          if (err) {throw err}
+
+          t.equal(require(`./${relativePath(__dirname, folder)}/src/thing.js`), 1, "should get the exported value")
+          fs.writeFile(jsfile, "module.exports = 2;", (err2) => {
+            if (err2) {throw err2}
+
             setTimeout(() => {
               t.equal(require(jsfile), 1, "should not update the cache")
               t.end()

@@ -29,7 +29,7 @@ metalsmith(__dirname)
 
 ## Options
 
-### paths (default: `{"**/*": true}`)
+### paths (default: `{"${source}/**/*": true}`)
 
 Map of paths to trigger rebuild. Both keys and value accept a [glob pattern](https://github.com/isaacs/node-glob).
 
@@ -43,10 +43,15 @@ Value accept a boolean. When a boolean is used, only watched files changed will 
 
 ```js
 {
-  "**/*": true, // every changed files will trigger a rebuild of themselves
+  "${source}/**/*": true, // every changed files will trigger a rebuild of themselves
   "templates/**/*": "**/*", // every templates changed will trigger a rebuild of all files
 }
 ```
+
+**Please note that**:
+- `${source}` is replaced by `metalsmith.source()`.
+- _values of the map are relative to `metalsmith.source()`_ (because it's the only place where to build files)
+
 
 ### livereload (default: `false`)
 
