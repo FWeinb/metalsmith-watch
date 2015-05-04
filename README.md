@@ -1,82 +1,83 @@
-# metalsmith-watch [![NPM version](https://badge.fury.io/js/metalsmith-watch.svg)](http://badge.fury.io/js/metalsmith-watch) [![Build Status](https://travis-ci.org/FWeinb/metalsmith-watch.svg?branch=master)](https://travis-ci.org/FWeinb/metalsmith-watch)
+# metalsmith-watch [![Build Status](https://travis-ci.org/FWeinb/metalsmith-watch.svg?branch=master)](https://travis-ci.org/FWeinb/metalsmith-watch) [![NPM version](https://badge.fury.io/js/metalsmith-watch.svg)](http://badge.fury.io/js/metalsmith-watch)
 
-  A metalsmith plugin to watch for a changes and trigger rebuilds.
+> Metalsmith plugin to watch for changes and trigger partial and full rebuilds.
 
 ## Installation
 
-    $ npm install metalsmith-watch
+```console
+$ npm install metalsmith-watch
+```
 
-## Basic example 
+## Usage
 
 ```js
 var metalsmith = require('metalsmith');
 var watch = require('metalsmith-watch');
 
 metalsmith(__dirname)
-  .use(watch())
+  .use(
+    watch({
+      paths: {
+        "**/*": true,
+        "templates/**/*": "**/*.md",
+      },
+      livereload: true,
+    })
+  )
   .build();
 ```
-
-This will start watching the `metalsmith.source()` directory and all sub directorys (`**/*` glob).
-
-## Advanced example
-
-```js
-var metalsmith = require('metalsmith');
-var watch = require('metalsmith-watch');
-
-metalsmith(__dirname)
-  .use(watch('*.md'))
-  .build();
-```
-
-This will watch the `metalsmith.source()` directory for changes in markdown files. 
 
 ## Options
 
-### pattern 
-Type: `String|Array`
-Default value: `'**/*'`
+### paths (default: `{"${source}/**/*": true}`)
 
-A glob pattern that is used for watching.
+Map of paths to trigger rebuild. Both keys and value accept a [glob pattern](https://github.com/isaacs/node-glob).
 
-### livereload
-Type: `Boolean|Number|Object`
-Default: false
-
-Set to `true` or set `livereload: 1337` to a port number to enable live reloading. Default and recommended port is `35729`.
-
-If enabled a live reload server will be started with the watch task per target. The live reload server will be triggered with the modified files.
-
-To get live reload working properly, you will need to add the following `script` tag to any file that you'd like live reloading to occur:
-
-`<script src="http://localhost:35729/livereload.js"></script>`
-
-Note that if you change the port for live reload in your build file, you'll need to use the same port in the script tag.
-
-Example:
 ```js
-var metalsmith = require('metalsmith');
-var watch = require('metalsmith-watch');
-
-metalsmith(__dirname)
-  .use(watch({
-    pattern : '**/*',
-    livereload: true
-  }))
-  .build();
+{
+  "file(s) to watch": "file(s) to rebuild"
+}
 ```
 
-## History
-  * `0.2.1` Use `.build` instead of `.run`. Update dependencies.
-  * `0.2.0` Update to work with metalsmith `1.0`
-  * `0.1.1` Add the ability to use an array to define multiple glob parameters.  
-  * `0.1.0` To conform to other plugins watch must be used like `watch()` now. Keep track of renamed files correctly, closing Issue [#5](../../issues/5) 
-  * `0.0.4` Added support for `livereload` closing Issue [#3](../../issues/3).
-  * `0.0.3` Fix bug introduced in [segmentio/metalsmith@`15d43a7`](https://github.com/segmentio/metalsmith/commit/15d43a77734067f2f958ad198884d06dde5ac15f) via PR [#1](../../pull/1)
-  * `0.0.2 Fix repositiory url in `package.json`
-  * `0.0.1` Release 
+Value accept a boolean. When a boolean is used, only watched files changed will be rebuilded.
 
-## License
+```js
+{
+  "${source}/**/*": true, // every changed files will trigger a rebuild of themselves
+  "templates/**/*": "**/*", // every templates changed will trigger a rebuild of all files
+}
+```
 
-  MIT
+**Please note that**:
+- `${source}` is replaced by `metalsmith.source()`.
+- _values of the map are relative to `metalsmith.source()`_ (because it's the only place where to build files)
+
+
+### livereload (default: `false`)
+
+Allows you to enable a livereload server.
+Using a boolean will enable a livereload server on port the default port is `35729`.
+Accept a port number to start on the port you need.
+
+To get live reload working properly, you should add the following `<script>` in your templates files to enable livereloading of each pages:
+
+```html
+<script src="http://localhost:35729/livereload.js"></script>
+```
+
+Make sure to update the port number in the script above accordingly to the port specified.
+
+### log (default: `function(...args) { console.log(prefix, ...args)}`)
+
+Function used to display the logs.
+
+### invalidateCache (default: `true`)
+
+Allows you to enable cache invalidation for js files.
+Convenient if you use some js files for templates
+(eg: React templates) to get updated components.
+If disabled you won't get update for changed js files as node/iojs use a cache.
+
+## [Changelog](CHANGELOG.md)
+
+## [License](LICENSE.md)
