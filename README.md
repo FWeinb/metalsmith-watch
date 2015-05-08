@@ -1,4 +1,4 @@
-# metalsmith-watch [![Build Status](https://travis-ci.org/FWeinb/metalsmith-watch.svg?branch=master)](https://travis-ci.org/FWeinb/metalsmith-watch) [![NPM version](https://badge.fury.io/js/metalsmith-watch.svg)](http://badge.fury.io/js/metalsmith-watch)
+# metalsmith-watch [![Build Status](https://travis-ci.org/FWeinb/metalsmith-watch.svg?branch=master)](https://travis-ci.org/FWeinb/metalsmith-watch) [![NPM version](http://img.shields.io/npm/v/metalsmith-watch.svg?style=flat)](https://www.npmjs.org/package/metalsmith-watch)
 
 > Metalsmith plugin to watch for changes and trigger partial and full rebuilds.
 
