@@ -192,7 +192,7 @@ function buildPattern(metalsmith, patterns, livereload, options, previousFilesMa
 
 export default function(options) {
   // just to mutate and pass watcher for testing
-  const originalOptions = options
+  const originalOptions = options || {}
 
   options = {
     ...{
