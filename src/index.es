@@ -1,5 +1,7 @@
 import {
   relative as relativePath,
+  resolve as resolvePath,
+  normalize as normalizePath,
 } from "path"
 
 import async from "async"
@@ -11,17 +13,31 @@ import metalsmithFilenames from "metalsmith-filenames"
 
 import livereloadServer from "./livereload"
 
+const jsFileRE = /\.(jsx?|es\d{0,1})$/
 const addFilenames = metalsmithFilenames()
 
 const ok = color.green("✔︎")
 const nok = color.red("✗")
 
-function invalidateCache(path, absolutePath, options) {
-  if (require.cache[absolutePath]) {
-    options.log(`${path} cache deleted`)
-    delete require.cache[absolutePath]
-  }
-}
+// only first file that require something has it in its children
+// so relying on children to invalidate sibling is not doable
+// function invalidateCache(from, path, options) {
+//   // we invalidate cache only for files in metalsmith root
+//   if (require.cache[path] && path.indexOf(from) === 0) {
+//     Object.keys(require.cache)
+//       .filter(file => file.indexOf(from) === 0)
+//       .filter(file => require.cache[file].children.indexOf(require.cache[path]) > -1)
+//       .forEach(file => {
+//         console.log(file, "is in children")
+//         invalidateCache(from, file, options)
+//       })
+//
+//     delete require.cache[path]
+//     options.log(`${relativePath(from, path)} cache deleted`)
+//     return true
+//   }
+//   return false
+// }
 
 function livereloadFiles(livereload, files, options) {
   if(livereload) {
@@ -117,6 +133,7 @@ function runAndUpdate(metalsmith, files, livereload, options, previousFilesMap) 
       return
     }
 
+
     // metalsmith-collections fix:  update ref for future tests
     Object.keys(freshFiles).forEach(path => {
       previousFilesMap[path] = freshFiles[path]
@@ -158,8 +175,7 @@ function buildFiles(metalsmith, paths, livereload, options, previousFilesMap) {
   )
 }
 
-
-function buildPattern(metalsmith, pattern, livereload, options, previousFilesMap) {
+function buildPattern(metalsmith, patterns, livereload, options, previousFilesMap) {
   unyield(metalsmith.read())((err, files) => {
     if (err) {
       options.log(color.red(`${nok} ${err}`))
@@ -167,7 +183,7 @@ function buildPattern(metalsmith, pattern, livereload, options, previousFilesMap
     }
 
     const filesToUpdate = {}
-    multimatch(Object.keys(files), pattern).forEach(path => filesToUpdate[path] = files[path])
+    multimatch(Object.keys(files), patterns).forEach(path => filesToUpdate[path] = files[path])
     const nbOfFiles = Object.keys(filesToUpdate).length
     options.log(color.gray(`- Updating ${nbOfFiles} file${nbOfFiles > 1 ? "s" : ""}...`))
     runAndUpdate(metalsmith, filesToUpdate, livereload, options, previousFilesMap)
@@ -183,7 +199,7 @@ export default function(options) {
       paths: "${source}/**/*",
       livereload: false,
       log: (...args) => {
-        console.log(color.gray("[metalsmith-server]"), ...args)
+        console.log(color.gray("[metalsmith-watch]"), ...args)
       },
       invalidateCache: true,
     },
@@ -201,9 +217,10 @@ export default function(options) {
 
   let watched = false
   return (files, metalsmith, cb) => {
-    cb()
 
+    // only run this plugin once
     if (watched) {
+      cb()
       return
     }
     watched = true
@@ -213,7 +230,7 @@ export default function(options) {
 
     const patterns = {}
     Object.keys(options.paths).map(pattern => {
-      const watchPattern = pattern.replace("${source}", metalsmith._source)
+      const watchPattern = pattern.replace("${source}", normalizePath(metalsmith._source))
       patterns[watchPattern] = options.paths[pattern]
     })
 
@@ -238,6 +255,31 @@ export default function(options) {
         let updatePlanned = false
         let pathsToUpdate = []
         const update = () => {
+          // since I can't find a way to do a smart cache cleaning
+          // (see commented invalidateCache() method)
+          // here is a more brutal way (that works)
+          if (
+            options.invalidateCache &&
+            // only if there is a js file
+            pathsToUpdate.some(file => file.match(jsFileRE))
+          ) {
+            const filesToInvalidate = Object.keys(patterns)
+              .reduce((acc, pattern) => {
+                return [
+                  ...acc,
+                  ...multimatch(
+                    Object.keys(require.cache),
+                    `${resolvePath(metalsmith._directory)}/${pattern}`
+                  ),
+                ]
+              }, [])
+            if (filesToInvalidate.length) {
+              options.log(color.gray(`- Deleting cache for ${filesToInvalidate.length} entries...`))
+              filesToInvalidate.forEach(file => delete require.cache[file])
+              options.log(`${ok} Cache deleted`)
+            }
+          }
+
           const patternsToUpdate = Object.keys(patterns).filter(pattern => patterns[pattern] === true)
           const filesToUpdate = multimatch(pathsToUpdate, patternsToUpdate).map(file => relativePath(metalsmith._source, file))
           if (filesToUpdate.length) {
@@ -247,9 +289,12 @@ export default function(options) {
           const patternsToUpdatePattern = Object.keys(patterns)
             .filter(pattern => patterns[pattern] !== true)
             .filter(pattern => multimatch(pathsToUpdate, pattern).length > 0)
+            .map(pattern => patterns[pattern])
+
           if (patternsToUpdatePattern.length) {
             buildPattern(metalsmith, patternsToUpdatePattern, livereload, options, previousFilesMap)
           }
+          // console.log(pathsToUpdate, filesToUpdate, patternsToUpdatePattern)
 
           // cleanup
           pathsToUpdate = []
@@ -267,15 +312,21 @@ export default function(options) {
             options.log(`${ok} ${color.cyan(filename)} ${event}`)
           }
 
+          // if (event === "changed") {
+          //   if (options.invalidateCache) {
+          //     invalidateCache(
+          //       resolvePath(metalsmith._directory),
+          //       resolvePath(path),
+          //       options
+          //     )
+          //   }
+          // }
+
           if (
             event === "added" ||
             event === "changed" ||
             event === "renamed"
           ) {
-            if (options.invalidateCache) {
-              invalidateCache(relativePath(metalsmith.source(), path), path, options)
-            }
-
             pathsToUpdate.push(relativePath(metalsmith.path(), path))
             if (updatePlanned) {
               clearTimeout(updatePlanned)
@@ -290,5 +341,7 @@ export default function(options) {
         }
       }
     )
+
+    cb()
   }
 }

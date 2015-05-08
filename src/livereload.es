@@ -1,4 +1,4 @@
-import chalk from "chalk"
+import color from "chalk"
 import tinylr from "tiny-lr"
 
 export default function livereloadServer(options, log) {
@@ -13,10 +13,10 @@ export default function livereloadServer(options, log) {
 
   server.on("error", function(err) {
     if(err.code === "EADDRINUSE") {
-      log(chalk.red("Port " + options.port + " is already in use by another process."))
+      log(color.red("Port " + options.port + " is already in use by another process."))
     }
     else {
-      log(chalk.red(err))
+      log(color.red(err))
     }
 
     throw err
@@ -24,10 +24,10 @@ export default function livereloadServer(options, log) {
 
   server.listen(options.port, function(err) {
     if(err) {
-      return log(chalk.red(err))
+      return log(color.red(err))
     }
 
-    log(chalk.green("Live reload server started on port: " + options.port))
+    log(`${color.green("✓")} Live reload server started on port: ${color.cyan(options.port)}`)
   })
 
   return server
