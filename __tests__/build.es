@@ -2,12 +2,11 @@ import fs from "fs"
 import tape from "tape"
 
 import {
-
   noopExceptErr,
   prepareTests,
 } from "./utils"
 
-tape("metalsmith-watch", (test) => {
+tape("metalsmith-watch rebuild", (test) => {
 
   test.test("track create", (t) => {
     const key = "create"

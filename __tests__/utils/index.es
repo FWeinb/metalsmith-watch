@@ -12,11 +12,11 @@ export function noopExceptErr(err) {
   if (err) {throw err}
 }
 
-const closers = {}
+const plugins = {}
 
 export function cleanTests(key) {
-  closers[key]()
-  // rm(`${__dirname}/../tmp-${key}`)
+  plugins[key].close()
+  rm(`${__dirname}/../tmp-${key}`)
 }
 
 export function prepareTests(key, testCb, assertionCb, options, beforeWatch) {
@@ -38,9 +38,10 @@ export function prepareTests(key, testCb, assertionCb, options, beforeWatch) {
 
   let alreadyDone = false
 
+  plugins[key] = watch(watcherOpts)
   metalsmith
     .source("./src")
-    .use(watch(watcherOpts))
+    .use(plugins[key])
     .build(err => {
       if (err) {throw err}
 
@@ -49,7 +50,6 @@ export function prepareTests(key, testCb, assertionCb, options, beforeWatch) {
           if (alreadyDone) {
             throw new Error("This assertion block should not be called twice")
           }
-          closers[key] = watcherOpts.close
           if (assertionCb !== noop) {
             alreadyDone = true
             assertionCb(files)

@@ -1,4 +1,8 @@
-# 1.0.0 - 2015-05-01
+# 1.0.1 - 2015-05-09
+
+- Fixed: the plugin works correctly without any options provided ([#21](https://github.com/FWeinb/metalsmith-watch/pull/21))
+
+# 1.0.0 - 2015-05-08
 
 - Fixed: metalsmith-collections are now correctly adjusted to avoid duplicates entries after rebuilds)
 - Removed: `pattern` option has been remove. Please use the new `paths` option

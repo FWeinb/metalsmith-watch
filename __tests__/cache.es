@@ -8,7 +8,7 @@ import {
   prepareTests,
 } from "./utils"
 
-tape("metalsmith-server/watcher", (test) => {
+tape("metalsmith-watch invalidateCache", (test) => {
 
   test.test("invalidate js cache", (t) => {
     const key = "cache"

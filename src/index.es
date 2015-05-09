@@ -191,9 +191,6 @@ function buildPattern(metalsmith, patterns, livereload, options, previousFilesMa
 }
 
 export default function(options) {
-  // just to mutate and pass watcher for testing
-  const originalOptions = options
-
   options = {
     ...{
       paths: "${source}/**/*",
@@ -216,7 +213,7 @@ export default function(options) {
   }
 
   let watched = false
-  return (files, metalsmith, cb) => {
+  const plugin = function metalsmithWatch(files, metalsmith, cb) {
 
     // only run this plugin once
     if (watched) {
@@ -335,13 +332,20 @@ export default function(options) {
           }
         })
 
-        originalOptions.close = () => {
-          watcher.close()
-          watcher = undefined
+        plugin.close = () => {
+          if (typeof watcher === "object") {
+            watcher.close()
+            watcher = undefined
+          }
         }
       }
     )
 
     cb()
   }
+
+  // convenience for testing
+  plugin.options = options
+
+  return plugin
 }
