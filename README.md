@@ -18,7 +18,7 @@ metalsmith(__dirname)
   .use(
     watch({
       paths: {
-        "**/*": true,
+        "${source}/**/*": true,
         "templates/**/*": "**/*.md",
       },
       livereload: true,
