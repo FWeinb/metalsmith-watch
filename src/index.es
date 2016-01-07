@@ -42,9 +42,18 @@ const nok = color.red("✗")
 function livereloadFiles(livereload, files, options) {
   if(livereload) {
     const keys = Object.keys(files)
+    // adding filterReload option for multimatch to remove unwanted files like *.css.map
+    // turns out map files being passed to livereload client script make a full reload of a page even if only css was updated
+    var passKeys = keys
+    if (options.filterReload && options.filterReload.length > 0) {
+      passKeys = multimatch(keys, options.filterReload)
+    }
+    // warn if all changes were filtered out
     const nbOfFiles = Object.keys(files).length
     options.log(`${ok} ${nbOfFiles} file${nbOfFiles > 1 ? "s" : ""} reloaded`)
-    livereload.changed({body: {files: keys}})
+    const nbOfPassedFiles = passKeys.length
+    options.log(`${ok} ${nbOfPassedFiles} file${nbOfPassedFiles > 1 ? "s" : ""} sent to livereload client`)
+    livereload.changed({body: {files: passKeys}})
   }
 }
 
