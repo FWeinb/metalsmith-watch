@@ -52,7 +52,11 @@ function livereloadFiles(livereload, files, options) {
     const nbOfFiles = Object.keys(files).length
     options.log(`${ok} ${nbOfFiles} file${nbOfFiles > 1 ? "s" : ""} reloaded`)
     const nbOfPassedFiles = passKeys.length
-    options.log(`${ok} ${nbOfPassedFiles} file${nbOfPassedFiles > 1 ? "s" : ""} sent to livereload client`)
+    if (nbOfPassedFiles > 0) {
+      options.log(`${ok} ${nbOfPassedFiles} file${nbOfPassedFiles > 1 ? "s" : ""} sent to livereload client`)
+    } else {
+      options.log(`${nok} ${nbOfPassedFiles} files sent to livereload client`)
+    }
     livereload.changed({body: {files: passKeys}})
   }
 }
