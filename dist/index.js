@@ -262,6 +262,9 @@ exports["default"] = function (options) {
     }
     watched = true;
 
+    // define watch mode for other plugins
+    metalsmith.__isWatch = true;
+
     // metalsmith-collections fix: keep filename as metadata
     saveFilenameInFilesData(files);
 
