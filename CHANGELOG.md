@@ -1,3 +1,8 @@
+# 1.0.2 - 2016-05-16
+
+- Fixed: remove deprecated warnings related to dependencies
+  ([#29](https://github.com/FWeinb/metalsmith-watch/pull/29))
+
 # 1.0.1 - 2015-05-09
 
 - Fixed: the plugin works correctly without any options provided ([#21](https://github.com/FWeinb/metalsmith-watch/pull/21))
