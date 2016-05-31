@@ -19,7 +19,7 @@ export function cleanTests(key) {
   rm(`${__dirname}/../tmp-${key}`)
 }
 
-export function prepareTests(key, testCb, assertionCb, options, beforeWatch) {
+export function prepareTests(key, testCb, assertionCb, options, beforeWatch, source = './src') {
   const folder = normalize(`${__dirname}/../tmp-${key}`)
   const metalsmith = new Metalsmith(folder)
 
@@ -40,7 +40,7 @@ export function prepareTests(key, testCb, assertionCb, options, beforeWatch) {
 
   plugins[key] = watch(watcherOpts)
   metalsmith
-    .source("./src")
+    .source(source)
     .use(plugins[key])
     .build(err => {
       if (err) {throw err}
