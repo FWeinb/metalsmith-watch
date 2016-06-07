@@ -1,7 +1,7 @@
 import {
   relative as relativePath,
   resolve as resolvePath,
-  normalize as normalizePath,
+  isAbsolute as isAbsolutePath,
 } from "path"
 
 import async from "async"
@@ -227,8 +227,13 @@ export default function(options) {
 
     const patterns = {}
     Object.keys(options.paths).map(pattern => {
-      const watchPattern = pattern.replace("${source}", normalizePath(metalsmith._source))
-      patterns[watchPattern] = options.paths[pattern]
+      let watchPattern = pattern.replace("${source}", metalsmith.source())
+      if (!isAbsolutePath(watchPattern)){
+        watchPattern = resolvePath(metalsmith.directory(), pattern);
+      }
+      const watchPatternRelative = relativePath(metalsmith.directory(), watchPattern)
+
+      patterns[watchPatternRelative] = options.paths[pattern]
     })
 
     gaze(
@@ -278,7 +283,10 @@ export default function(options) {
           }
 
           const patternsToUpdate = Object.keys(patterns).filter(pattern => patterns[pattern] === true)
-          const filesToUpdate = multimatch(pathsToUpdate, patternsToUpdate).map(file => relativePath(metalsmith._source, file))
+          const filesToUpdate = multimatch(pathsToUpdate, patternsToUpdate).map((file) => {
+            const filepath = resolvePath(metalsmith.path(), file)
+            return relativePath(metalsmith.source(), filepath)
+          })
           if (filesToUpdate.length) {
             buildFiles(metalsmith, filesToUpdate, livereload, options, previousFilesMap)
           }
