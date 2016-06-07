@@ -1,6 +1,6 @@
 {
   "name": "metalsmith-watch",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Metalsmith plugin to watch for changes and trigger partial and full rebuilds",
   "keywords": [
     "metalsmith",

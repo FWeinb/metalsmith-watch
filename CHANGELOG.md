@@ -1,3 +1,8 @@
+# 1.0.3 - 2016-06-07
+
+- Fixed: absolute source path doesn't make the pattern matcher fail anymore
+  ([#30](https://github.com/FWeinb/metalsmith-watch/pull/30) - @zakhenry)
+
 # 1.0.2 - 2016-05-16
 
 - Fixed: remove deprecated warnings related to dependencies
