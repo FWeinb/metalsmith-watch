@@ -341,6 +341,9 @@ export default function(options) {
         })
 
         plugin.close = () => {
+          if (livereload){
+            livereload.close();
+          }
           if (typeof watcher === "object") {
             watcher.close()
             watcher = undefined
