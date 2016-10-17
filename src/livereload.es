@@ -27,7 +27,7 @@ export default function livereloadServer(options, log) {
       return log(color.red(err))
     }
 
-    log(`${color.green("✓")} Live reload server started on port: ${color.cyan(options.port)}`)
+    log(`${color.green("✔︎")} Live reload server started on port: ${color.cyan(options.port)}`)
   })
 
   return server
