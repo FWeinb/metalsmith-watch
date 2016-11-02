@@ -220,8 +220,8 @@ export default function(options) {
   }
 
   let onUpdateCallback
-  if (options.onUpdateCallback) {
-    onUpdateCallback = onUpdateCallback.bind(this);
+  if (options.onUpdateCallback && typeof options.onUpdateCallback === 'function') {
+    onUpdateCallback = options.onUpdateCallback.bind(this);
   }
 
   let watched = false
