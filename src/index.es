@@ -48,6 +48,12 @@ function livereloadFiles(livereload, files, options) {
   }
 }
 
+function runOnUpdateCallback(onUpdateCallback, files, options) {
+  if (onUpdateCallback) {
+    onUpdateCallback(files, options);
+  }
+}
+
 // metalsmith-collections fix: collections are mutable
 // fuck mutability
 function backupCollections(collections) {
@@ -96,7 +102,7 @@ function removeFilesFromCollection(files, collections) {
   })
 }
 
-function runAndUpdate(metalsmith, files, livereload, options, previousFilesMap) {
+function runAndUpdate(metalsmith, files, livereload, onUpdateCallback, options, previousFilesMap) {
   // metalsmith-collections fix: metalsmith-collections plugin add files to
   // collection when run() is called which create problem since we use run()
   // with only new files.
@@ -143,11 +149,12 @@ function runAndUpdate(metalsmith, files, livereload, options, previousFilesMap) 
       if(writeErr) {throw writeErr}
 
       livereloadFiles(livereload, freshFiles, options)
+      runOnUpdateCallback(onUpdateCallback, freshFiles, options)
     })
   })
 }
 
-function buildFiles(metalsmith, paths, livereload, options, previousFilesMap) {
+function buildFiles(metalsmith, paths, livereload, onUpdateCallback, options, previousFilesMap) {
   const files = {}
   async.each(
     paths,
@@ -170,12 +177,12 @@ function buildFiles(metalsmith, paths, livereload, options, previousFilesMap) {
 
       const nbOfFiles = Object.keys(files).length
       options.log(color.gray(`- Updating ${nbOfFiles} file${nbOfFiles > 1 ? "s" : ""}...`))
-      runAndUpdate(metalsmith, files, livereload, options, previousFilesMap)
+      runAndUpdate(metalsmith, files, livereload, onUpdateCallback, options, previousFilesMap)
     }
   )
 }
 
-function buildPattern(metalsmith, patterns, livereload, options, previousFilesMap) {
+function buildPattern(metalsmith, patterns, livereload, onUpdateCallback, options, previousFilesMap) {
   unyield(metalsmith.read())((err, files) => {
     if (err) {
       options.log(color.red(`${nok} ${err}`))
@@ -186,7 +193,7 @@ function buildPattern(metalsmith, patterns, livereload, options, previousFilesMa
     multimatch(Object.keys(files), patterns).forEach(path => filesToUpdate[path] = files[path])
     const nbOfFiles = Object.keys(filesToUpdate).length
     options.log(color.gray(`- Updating ${nbOfFiles} file${nbOfFiles > 1 ? "s" : ""}...`))
-    runAndUpdate(metalsmith, filesToUpdate, livereload, options, previousFilesMap)
+    runAndUpdate(metalsmith, filesToUpdate, livereload, onUpdateCallback, options, previousFilesMap)
   })
 }
 
@@ -210,6 +217,11 @@ export default function(options) {
   let livereload
   if(options.livereload) {
     livereload = livereloadServer(options.livereload, options.log)
+  }
+
+  let onUpdateCallback
+  if (options.onUpdateCallback) {
+    onUpdateCallback = onUpdateCallback.bind(this);
   }
 
   let watched = false
@@ -288,7 +300,7 @@ export default function(options) {
             return relativePath(metalsmith.source(), filepath)
           })
           if (filesToUpdate.length) {
-            buildFiles(metalsmith, filesToUpdate, livereload, options, previousFilesMap)
+            buildFiles(metalsmith, filesToUpdate, livereload, onUpdateCallback, options, previousFilesMap)
           }
 
           const patternsToUpdatePattern = Object.keys(patterns)
@@ -297,7 +309,7 @@ export default function(options) {
             .map(pattern => patterns[pattern])
 
           if (patternsToUpdatePattern.length) {
-            buildPattern(metalsmith, patternsToUpdatePattern, livereload, options, previousFilesMap)
+            buildPattern(metalsmith, patternsToUpdatePattern, livereload, onUpdateCallback, options, previousFilesMap)
           }
           // console.log(pathsToUpdate, filesToUpdate, patternsToUpdatePattern)
 
