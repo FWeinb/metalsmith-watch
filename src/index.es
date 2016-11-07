@@ -165,6 +165,10 @@ function buildFiles(metalsmith, paths, livereload, onUpdateCallback, options, pr
           return
         }
 
+        if (previousFilesMap[path]) {
+          file = Object.assign({}, previousFilesMap[path], file);
+        }
+        
         files[path] = file
         cb()
       })
