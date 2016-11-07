@@ -2,6 +2,7 @@ import {
   relative as relativePath,
   resolve as resolvePath,
   isAbsolute as isAbsolutePath,
+  normalize as normalizePath
 } from "path"
 
 import async from "async"
@@ -81,8 +82,15 @@ function updateCollections(metalsmith, collections) {
 }
 
 // metalsmith-collections fix: helps to update fix collections
-function saveFilenameInFilesData(files) {
+function saveFilenameInFilesData(metalsmith, files, options) {
   addFilenames(files)
+//   const relativeRoot = options.relativeRoot ? options.relativeRoot : metalsmith.source();
+//   Object.keys(files).forEach(filename => {
+//     if (!files[filename].filename) {
+// console.log('svaing.... ', normalizePath(relativePath(relativeRoot, filename)))
+//       files[filename].filename = normalizePath(relativePath(relativeRoot, filename))
+//     }
+//   })
 }
 
 // metalsmith-collections fix: remove items from collections that will be readded by the partial build
@@ -112,7 +120,7 @@ function runAndUpdate(metalsmith, files, livereload, onUpdateCallback, options, 
   // (file already in the collections)
   // we iterate on collections with reference to previous files data
   // and skip old files that match the paths that will be updated
-  saveFilenameInFilesData(files)
+  saveFilenameInFilesData(metalsmith, files, options)
   const collections = metalsmith.metadata().collections
   const collectionsBackup = backupCollections(collections)
   if (collections) {
@@ -139,7 +147,6 @@ function runAndUpdate(metalsmith, files, livereload, onUpdateCallback, options, 
       return
     }
 
-
     // metalsmith-collections fix:  update ref for future tests
     Object.keys(freshFiles).forEach(path => {
       previousFilesMap[path] = freshFiles[path]
@@ -156,6 +163,7 @@ function runAndUpdate(metalsmith, files, livereload, onUpdateCallback, options, 
 
 function buildFiles(metalsmith, paths, livereload, onUpdateCallback, options, previousFilesMap) {
   const files = {}
+  const metadata = metalsmith.metadata();
   async.each(
     paths,
     (path, cb) => {
@@ -165,10 +173,13 @@ function buildFiles(metalsmith, paths, livereload, onUpdateCallback, options, pr
           return
         }
 
-        if (previousFilesMap[path]) {
-          file = Object.assign({}, previousFilesMap[path], file);
+        if (metadata && metadata.permalinkMapping) {
+          const originalFilename = metadata.permalinkMapping[path];
+          if (originalFilename && previousFilesMap[originalFilename]) {
+            file = Object.assign({}, previousFilesMap[originalFilename], file);
+          }
         }
-        
+
         files[path] = file
         cb()
       })
@@ -239,7 +250,7 @@ export default function(options) {
     watched = true
 
     // metalsmith-collections fix: keep filename as metadata
-    saveFilenameInFilesData(files)
+    saveFilenameInFilesData(metalsmith, files, options)
 
     const patterns = {}
     Object.keys(options.paths).map(pattern => {
