@@ -67,6 +67,18 @@ To get live reload working properly, you should add the following `<script>` in 
 
 Make sure to update the port number in the script above accordingly to the port specified.
 
+### onUpdateCallback (default: `undefined`)
+
+Allows you to define a function to get called _after_ metalsmith has reloaded all the files. If a function is passed, this will be called with the updated files and all options passed.
+
+```javascript
+{
+  onUpdateCallback: function (files, options) {
+    // Called on every rebuild
+  }
+}
+```
+
 ### log (default: `function(...args) { console.log(prefix, ...args)}`)
 
 Function used to display the logs.
