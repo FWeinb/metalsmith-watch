@@ -177,10 +177,14 @@ function buildFiles(metalsmith, paths, livereload, onUpdateCallback, options, pr
           const originalFilename = metadata.permalinkMapping[path];
           if (originalFilename && previousFilesMap[originalFilename]) {
             file = Object.assign({}, previousFilesMap[originalFilename], file);
+            file[originalFilename] = file
+          } else {
+            files[path] = file
           }
+        } else {
+          files[path] = file
         }
 
-        files[path] = file
         cb()
       })
     },
