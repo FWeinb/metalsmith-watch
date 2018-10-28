@@ -1,6 +1,7 @@
 import fs from "fs"
 import tape from "tape"
 import chalk from "chalk"
+import stripAnsi from "strip-ansi"
 
 import {
   noopExceptErr,
@@ -27,7 +28,7 @@ tape("metalsmith-watch/logs", t => {
     {
       log: (log) => {
         // console.log("## " + log)
-        logs.push(chalk.stripColor(log))
+        logs.push(stripAnsi(log))
       },
     }
   )
