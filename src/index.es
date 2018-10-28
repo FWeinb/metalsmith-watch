@@ -229,7 +229,7 @@ export default function(options) {
     Object.keys(options.paths).map(pattern => {
       let watchPattern = pattern.replace("${source}", metalsmith.source())
       if (!isAbsolutePath(watchPattern)){
-        watchPattern = resolvePath(metalsmith.directory(), pattern);
+        watchPattern = resolvePath(metalsmith.directory(), pattern)
       }
       const watchPatternRelative = relativePath(metalsmith.directory(), watchPattern)
 
