@@ -48,7 +48,6 @@ tape("metalsmith-watch/paths", test => {
       () => {
         t.pass("should rebuild if a mapped item get updated")
         t.end()
-        // setTimeout(() => rm(siblingFolder), 1000)
       },
       {
         paths: {
