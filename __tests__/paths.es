@@ -9,8 +9,8 @@ import {
   prepareTests,
 } from "./utils"
 
-tape("metalsmith-watch/paths", (test) => {
-  test.test('relative source root', t => {
+tape("metalsmith-watch/paths", test => {
+  test.test("relative source root", t => {
     const key = "relative"
     const siblingFolder = `${__dirname}/tmp-${key}/templates`
     prepareTests(
@@ -21,7 +21,6 @@ tape("metalsmith-watch/paths", (test) => {
       () => {
         t.pass("should rebuild if a mapped item get updated")
         t.end()
-        setTimeout(() => rm(siblingFolder), 1000)
       },
       {
         paths: {
@@ -38,7 +37,7 @@ tape("metalsmith-watch/paths", (test) => {
     )
   })
 
-  test.test('absolute paths', t => {
+  test.test("absolute paths", t => {
     const key = "absolute"
     const siblingFolder = `${__dirname}/tmp-${key}/templates`
     prepareTests(
@@ -49,7 +48,7 @@ tape("metalsmith-watch/paths", (test) => {
       () => {
         t.pass("should rebuild if a mapped item get updated")
         t.end()
-        setTimeout(() => rm(siblingFolder), 1000)
+        // setTimeout(() => rm(siblingFolder), 1000)
       },
       {
         paths: {
@@ -66,6 +65,4 @@ tape("metalsmith-watch/paths", (test) => {
       `${__dirname}/tmp-${key}`
     )
   })
-
-
 })

@@ -19,7 +19,7 @@ export function cleanTests(key) {
   rm(`${__dirname}/../tmp-${key}`)
 }
 
-export function prepareTests(key, testCb, assertionCb, options, beforeWatch, source = './src') {
+export function prepareTests(key, testCb, assertionCb, options, beforeWatch, source = "./src") {
   const folder = normalize(`${__dirname}/../tmp-${key}`)
   const metalsmith = new Metalsmith(folder)
 
