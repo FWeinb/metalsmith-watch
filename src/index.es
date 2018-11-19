@@ -5,7 +5,7 @@ import {
 } from "path"
 
 import async from "async"
-import gaze from "gaze"
+import chokidar from "chokidar"
 import color from "chalk"
 import multimatch from "multimatch"
 import unyield from "unyield"
@@ -155,7 +155,7 @@ function buildFiles(metalsmith, paths, livereload, options, previousFilesMap) {
       metalsmith.readFile(path, function(err, file) {
         if (err) {
           options.log(color.red(`${nok} ${err}`))
-          return
+          return cb(err)
         }
 
         files[path] = file
@@ -190,7 +190,7 @@ function buildPattern(metalsmith, patterns, livereload, options, previousFilesMa
   })
 }
 
-export default function(options) {
+module.exports = function(options) {
   options = {
     ...{
       paths: "${source}/**/*",
@@ -229,125 +229,118 @@ export default function(options) {
     Object.keys(options.paths).map(pattern => {
       let watchPattern = pattern.replace("${source}", metalsmith.source())
       if (!isAbsolutePath(watchPattern)){
-        watchPattern = resolvePath(metalsmith.directory(), pattern);
+        watchPattern = resolvePath(metalsmith.directory(), pattern)
       }
       const watchPatternRelative = relativePath(metalsmith.directory(), watchPattern)
 
       patterns[watchPatternRelative] = options.paths[pattern]
     })
 
-    gaze(
-      Object.keys(patterns),
+    const watcher = chokidar.watch(Object.keys(patterns), Object.assign(
       {
-        ...options.gaze,
+        // do not watch metalsmith's build dir
+        ignored: `${metalsmith._destination}/**/*`,
+        ignoreInitials: true,
         cwd: metalsmith._directory,
+        persistent: false,
       },
-      function watcherReady(err, watcher) {
-        if (err) {throw err}
+      options.chokidar
+    ))
+    watcher.on("error", err => {
+      throw err
+    })
 
-        Object.keys(patterns).forEach(pattern => {
-          options.log(`${ok} Watching ${color.cyan(pattern)}`)
-        })
+    watcher.on("ready", () => {
+      Object.keys(patterns).forEach(pattern => {
+        options.log(`${ok} Watching ${color.cyan(pattern)}`)
+      })
 
-        const previousFilesMap = {...files}
+      const previousFilesMap = {...files}
 
-        // Delay watch update to be able to bundle multiples update in the same build
-        // Saving multiples files at the same time create multiples build otherwise
-        let updateDelay = 50
-        let updatePlanned = false
-        let pathsToUpdate = []
-        const update = () => {
-          // since I can't find a way to do a smart cache cleaning
-          // (see commented invalidateCache() method)
-          // here is a more brutal way (that works)
-          if (
-            options.invalidateCache &&
-            // only if there is a js file
-            pathsToUpdate.some(file => file.match(jsFileRE))
-          ) {
-            const filesToInvalidate = Object.keys(patterns)
-              .reduce((acc, pattern) => {
-                return [
-                  ...acc,
-                  ...multimatch(
-                    Object.keys(require.cache),
-                    `${resolvePath(metalsmith._directory)}/${pattern}`
-                  ),
-                ]
-              }, [])
-            if (filesToInvalidate.length) {
-              options.log(color.gray(`- Deleting cache for ${filesToInvalidate.length} entries...`))
-              filesToInvalidate.forEach(file => delete require.cache[file])
-              options.log(`${ok} Cache deleted`)
-            }
+      // Delay watch update to be able to bundle multiples update in the same build
+      // Saving multiples files at the same time create multiples build otherwise
+      let updateDelay = 50
+      let updatePlanned = false
+      let pathsToUpdate = []
+      const update = () => {
+        // since I can't find a way to do a smart cache cleaning
+        // (see commented invalidateCache() method)
+        // here is a more brutal way (that works)
+        if (
+          options.invalidateCache &&
+          // only if there is a js file
+          pathsToUpdate.some(file => file.match(jsFileRE))
+        ) {
+          const filesToInvalidate = Object.keys(patterns)
+            .reduce((acc, pattern) => {
+              return [
+                ...acc,
+                ...multimatch(
+                  Object.keys(require.cache),
+                  `${resolvePath(metalsmith._directory)}/${pattern}`
+                ),
+              ]
+            }, [])
+          if (filesToInvalidate.length) {
+            options.log(color.gray(`- Deleting cache for ${filesToInvalidate.length} entries...`))
+            filesToInvalidate.forEach(file => delete require.cache[file])
+            options.log(`${ok} Cache deleted`)
           }
-
-          const patternsToUpdate = Object.keys(patterns).filter(pattern => patterns[pattern] === true)
-          const filesToUpdate = multimatch(pathsToUpdate, patternsToUpdate).map((file) => {
-            const filepath = resolvePath(metalsmith.path(), file)
-            return relativePath(metalsmith.source(), filepath)
-          })
-          if (filesToUpdate.length) {
-            buildFiles(metalsmith, filesToUpdate, livereload, options, previousFilesMap)
-          }
-
-          const patternsToUpdatePattern = Object.keys(patterns)
-            .filter(pattern => patterns[pattern] !== true)
-            .filter(pattern => multimatch(pathsToUpdate, pattern).length > 0)
-            .map(pattern => patterns[pattern])
-
-          if (patternsToUpdatePattern.length) {
-            buildPattern(metalsmith, patternsToUpdatePattern, livereload, options, previousFilesMap)
-          }
-          // console.log(pathsToUpdate, filesToUpdate, patternsToUpdatePattern)
-
-          // cleanup
-          pathsToUpdate = []
         }
 
-        watcher.on("all", (event, path) => {
-          const filename = relativePath(metalsmith._directory, path)
-
-          if (
-            event === "added" ||
-            event === "changed" ||
-            event === "renamed" ||
-            event === "deleted"
-          ) {
-            options.log(`${ok} ${color.cyan(filename)} ${event}`)
-          }
-
-          // if (event === "changed") {
-          //   if (options.invalidateCache) {
-          //     invalidateCache(
-          //       resolvePath(metalsmith._directory),
-          //       resolvePath(path),
-          //       options
-          //     )
-          //   }
-          // }
-
-          if (
-            event === "added" ||
-            event === "changed" ||
-            event === "renamed"
-          ) {
-            pathsToUpdate.push(relativePath(metalsmith.path(), path))
-            if (updatePlanned) {
-              clearTimeout(updatePlanned)
-            }
-            updatePlanned = setTimeout(update, updateDelay)
-          }
+        const patternsToUpdate = Object.keys(patterns).filter(pattern => patterns[pattern] === true)
+        const filesToUpdate = multimatch(pathsToUpdate, patternsToUpdate).map((file) => {
+          const filepath = resolvePath(metalsmith.path(), file)
+          return relativePath(metalsmith.source(), filepath)
         })
 
-        plugin.close = () => {
-          if (typeof watcher === "object") {
-            watcher.close()
-            watcher = undefined
+        if (filesToUpdate.length) {
+          buildFiles(metalsmith, filesToUpdate, livereload, options, previousFilesMap)
+        }
+
+        const patternsToUpdatePattern = Object.keys(patterns)
+          .filter(pattern => patterns[pattern] !== true)
+          .filter(pattern => multimatch(pathsToUpdate, pattern).length > 0)
+          .map(pattern => patterns[pattern])
+
+        if (patternsToUpdatePattern.length) {
+          buildPattern(metalsmith, patternsToUpdatePattern, livereload, options, previousFilesMap)
+        }
+
+        // cleanup
+        pathsToUpdate = []
+      }
+
+      watcher.on("all", (event, path) => {
+        if (
+          event === "add" ||
+          event === "addDir" ||
+          event === "change" ||
+          event === "unlink" ||
+          event === "unlinkDir"
+        ) {
+          options.log(`${ok} ${color.cyan(path)} ${event}`)
+        }
+
+        if (
+          event === "add" ||
+          event === "change"
+        ) {
+          pathsToUpdate.push(path)
+          if (updatePlanned) {
+            clearTimeout(updatePlanned)
           }
+
+          updatePlanned = setTimeout(update, updateDelay)
+        }
+      })
+
+      plugin.close = () => {
+        if (typeof watcher === "object") {
+          watcher.close()
         }
       }
-    )
+    })
 
     cb()
   }
