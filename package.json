@@ -17,7 +17,6 @@
   ],
   "main": "dist/index.js",
   "dependencies": {
-    "async": "^2.6.1",
     "chalk": "^2.4.1",
     "chokidar": "^2.0.4",
     "metalsmith-filenames": "^1.0.0",

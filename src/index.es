@@ -6,7 +6,6 @@ import {
   normalize as normalizePath,
 } from "path"
 
-import async from "async"
 import chokidar from "chokidar"
 import color from "chalk"
 import multimatch from "multimatch"
@@ -149,35 +148,7 @@ function runAndUpdate(metalsmith, files, livereload, options, previousFilesMap) 
   })
 }
 
-function buildFiles(metalsmith, paths, livereload, options, previousFilesMap) {
-  const files = {}
-  async.each(
-    paths,
-    (path, cb) => {
-      metalsmith.readFile(path, function(err, file) {
-        if (err) {
-          options.log(color.red(`${nok} ${err}`))
-          return cb(err)
-        }
-
-        files[path] = file
-        cb()
-      })
-    },
-    (err) => {
-      if (err) {
-        options.log(color.red(`${nok} ${err}`))
-        return
-      }
-
-      const nbOfFiles = Object.keys(files).length
-      options.log(color.gray(`- Updating ${nbOfFiles} file${nbOfFiles > 1 ? "s" : ""}...`))
-      runAndUpdate(metalsmith, files, livereload, options, previousFilesMap)
-    }
-  )
-}
-
-function buildPattern(metalsmith, patterns, livereload, options, previousFilesMap) {
+function rebuild(metalsmith, patterns, livereload, options, previousFilesMap) {
   unyield(metalsmith.read())((err, files) => {
     if (err) {
       options.log(color.red(`${nok} ${err}`))
@@ -186,10 +157,48 @@ function buildPattern(metalsmith, patterns, livereload, options, previousFilesMa
 
     const filesToUpdate = {}
     multimatch(Object.keys(files), patterns).forEach(path => filesToUpdate[path] = files[path])
+
+    patterns.forEach(p => {
+      if (files[p]) {
+        filesToUpdate[p] = files[p]
+      }
+    })
+
     const nbOfFiles = Object.keys(filesToUpdate).length
     options.log(color.gray(`- Updating ${nbOfFiles} file${nbOfFiles > 1 ? "s" : ""}...`))
     runAndUpdate(metalsmith, filesToUpdate, livereload, options, previousFilesMap)
   })
+}
+
+function getRebuildList(metalsmith, patterns, changed) {
+  const patternsToUpdate = Object.keys(patterns).filter(pattern => patterns[pattern].has("${self}"))
+  const filesToUpdate = multimatch(changed, patternsToUpdate).map(file => {
+    const filepath = resolvePath(metalsmith.path(), file)
+    return relativePath(metalsmith.source(), filepath)
+  })
+
+  const patternsToUpdatePattern = []
+
+  for (const pattern of Object.keys(patterns)) {
+    for (const updatePattern of patterns[pattern]) {
+      if (updatePattern.includes("${dirname}")) {
+        patternsToUpdatePattern.push(...changed
+          .filter(pathToUpdate => multimatch(pathToUpdate, pattern).length > 0)
+          .map(pathToUpdate => {
+            const
+              absolutePath = dirname(resolvePath(metalsmith.directory(), pathToUpdate)),
+              relativeToSrc = relativePath(metalsmith.source(), absolutePath)
+
+            return normalizePath(updatePattern.replace("${dirname}", relativeToSrc))
+          })
+        )
+      } else if (updatePattern !== "${self}" && multimatch(changed, pattern).length > 0) {
+        patternsToUpdatePattern.push(updatePattern)
+      }
+    }
+  }
+
+  return filesToUpdate.concat(patternsToUpdatePattern)
 }
 
 module.exports = function(options) {
@@ -233,9 +242,20 @@ module.exports = function(options) {
       if (!isAbsolutePath(watchPattern)){
         watchPattern = resolvePath(metalsmith.directory(), pattern)
       }
-      const watchPatternRelative = relativePath(metalsmith.directory(), watchPattern)
 
-      patterns[watchPatternRelative] = options.paths[pattern]
+      const watchPatternRelative = relativePath(metalsmith.directory(), watchPattern)
+      const replacement = new Set(Array.isArray(options.paths[pattern]) ?
+        options.paths[pattern] :
+        [options.paths[pattern]]
+      )
+
+      // backward compatibility: replace true with "${self}"
+      if (replacement.has(true)) {
+        replacement.delete(true)
+        replacement.add("${self}")
+      }
+
+      patterns[watchPatternRelative] = replacement
     })
 
     const watcher = chokidar.watch(Object.keys(patterns), Object.assign(
@@ -290,39 +310,10 @@ module.exports = function(options) {
           }
         }
 
-        const patternsToUpdate = Object.keys(patterns).filter(pattern => patterns[pattern] === true)
-        const filesToUpdate = multimatch(pathsToUpdate, patternsToUpdate).map((file) => {
-          const filepath = resolvePath(metalsmith.path(), file)
-          return relativePath(metalsmith.source(), filepath)
-        })
+        const toRebuild = getRebuildList(metalsmith, patterns, pathsToUpdate)
 
-        if (filesToUpdate.length) {
-          buildFiles(metalsmith, filesToUpdate, livereload, options, previousFilesMap)
-        }
-
-        const patternsToUpdatePattern = []
-
-        Object.keys(patterns)
-          .filter(pattern => patterns[pattern] !== true)
-          .forEach(pattern => {
-            if (patterns[pattern].includes("${dirname}")) {
-              patternsToUpdatePattern.push(...pathsToUpdate
-                .filter(pathToUpdate => multimatch(pathToUpdate, pattern).length > 0)
-                .map(pathToUpdate => {
-                  const
-                    absolutePath = dirname(resolvePath(metalsmith.directory(), pathToUpdate)),
-                    relativeToSrc = relativePath(metalsmith.source(), absolutePath)
-
-                  return normalizePath(patterns[pattern].replace("${dirname}", relativeToSrc))
-                })
-              )
-            } else if (multimatch(pathsToUpdate, pattern).length > 0) {
-              patternsToUpdatePattern.push(patterns[pattern])
-            }
-          })
-
-        if (patternsToUpdatePattern.length) {
-          buildPattern(metalsmith, patternsToUpdatePattern, livereload, options, previousFilesMap)
+        if (toRebuild.length) {
+          rebuild(metalsmith, toRebuild, livereload, options, previousFilesMap)
         }
 
         // cleanup

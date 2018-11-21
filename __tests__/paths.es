@@ -25,7 +25,7 @@ tape("metalsmith-watch/paths", test => {
       },
       {
         paths: {
-          "${source}/**/*": true,
+          "${source}/**/*": "${self}",
           "templates/**/*": "**/*",
         },
       },
@@ -53,7 +53,7 @@ tape("metalsmith-watch/paths", test => {
       },
       {
         paths: {
-          "${source}/**/*": true,
+          "${source}/**/*": "${self}",
           "${source}/**/*": "${dirname}/*",
         },
       },
@@ -81,7 +81,7 @@ tape("metalsmith-watch/paths", test => {
       },
       {
         paths: {
-          "${source}/**/*": true,
+          "${source}/**/*": "${self}",
         },
       },
       () => {
@@ -92,6 +92,35 @@ tape("metalsmith-watch/paths", test => {
       },
       //use absolute source path
       `${__dirname}/tmp-${key}`
+    )
+  })
+
+  test.test("multiple paths", t => {
+    const key = "multiple"
+    const siblingFolder = `${__dirname}/tmp-${key}/src`
+    prepareTests(
+      key,
+      () => {
+        fs.writeFile(`${siblingFolder}/foo/test`, "test", noopExceptErr)
+      },
+      files => {
+        t.deepEqual(Object.keys(files), ["foo/test", "bar/dummy"], "should rebuild the expected files list")
+        t.pass("should rebuild if a mapped item get updated")
+        t.end()
+      },
+      {
+        paths: {
+          "${source}/**/*": ["${dirname}/../bar/*", "${self}"],
+        },
+      },
+      () => {
+        rm(siblingFolder)
+
+        for (const name of ["foo", "bar", "baz"]) {
+          mkdirp(`${siblingFolder}/${name}`)
+          fs.writeFileSync(`${siblingFolder}/${name}/dummy`, "")
+        }
+      }
     )
   })
 })
