@@ -18,7 +18,7 @@ metalsmith(__dirname)
   .use(
     watch({
       paths: {
-        "${source}/**/*": true,
+        "${source}/**/*": "${self}",
         "templates/**/*": "**/*.md",
       },
       livereload: true,
@@ -29,9 +29,9 @@ metalsmith(__dirname)
 
 ## Options
 
-### paths (default: `{"${source}/**/*": true}`)
+### paths (default: `{"${source}/**/*": "${self}"}`)
 
-Map of paths to trigger rebuild. Both keys and value accept a [glob pattern](https://github.com/isaacs/node-glob).
+Map of paths to watch, and what each of these paths should rebuild. Both keys and values accept a [glob pattern](https://github.com/isaacs/node-glob):
 
 ```js
 {
@@ -39,18 +39,31 @@ Map of paths to trigger rebuild. Both keys and value accept a [glob pattern](htt
 }
 ```
 
-Value accept a boolean. When a boolean is used, only watched files changed will be rebuilded.
+A map value can be either a single string, or an array of strings. If an array is provided, all items matching the array values are rebuilt.
+
+Additional to glob patterns, the following keywords can be used in map values:
+* `${self}`: the changed file itself
+* `${dirname}`: points to the directory holding the changed file
 
 ```js
 {
-  "${source}/**/*": true, // every changed files will trigger a rebuild of themselves
-  "templates/**/*": "**/*", // every templates changed will trigger a rebuild of all files
+  // only the modified markdown files are rebuilt on change
+  "${source}/**/*.md": "${self}",
+  
+  // template changes trigger a rebuild of all files 
+  "templates/**/*": "**/*", 
+
+  // changes to code examples rebuild:
+  //   * all files in the "assets" directory and its subdirectories
+  //   * all files in their respective parent directories
+  "${source}/**/code_examples/*": ["assets/**/*", "${dirname}/../*"], 
 }
 ```
 
 **Please note that**:
-- `${source}` is replaced by `metalsmith.source()`.
-- _values of the map are relative to `metalsmith.source()`_ (because it's the only place where to build files)
+- `${source}` can be used in the watched path configuration, and is replaced by `metalsmith.source()` 
+- values of the map are **always** relative to `metalsmith.source()` (because only source files can be built)
+- to ensure backward compatibility with older versions of `metalsmith-watch`, map values can be set with the boolean `true` value; this has the same effect than the `${self}` keyword
 
 
 ### livereload (default: `false`)
