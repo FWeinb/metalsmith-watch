@@ -31,7 +31,7 @@ metalsmith(__dirname)
 
 ### paths (default: `{"${source}/**/*": true}`)
 
-Map of paths to trigger rebuild. Both keys and value accept a [glob pattern](https://github.com/isaacs/node-glob).
+Map of paths to watch, and what each of these paths should rebuild. Both keys and values accept a [glob pattern](https://github.com/isaacs/node-glob):
 
 ```js
 {
@@ -39,17 +39,25 @@ Map of paths to trigger rebuild. Both keys and value accept a [glob pattern](htt
 }
 ```
 
-Value accept a boolean. When a boolean is used, only watched files changed will be rebuilded.
+The map values can be either a string or the boolean `true` value:
+* if the value is set to true, then only the changed file is rebuilt
+* if set to a string, all files matching the glob pattern are rebuilt; the keyword `${dirname}` can be used, pointing to the directory holding the changed file
 
 ```js
 {
-  "${source}/**/*": true, // every changed files will trigger a rebuild of themselves
-  "templates/**/*": "**/*", // every templates changed will trigger a rebuild of all files
+  // only the modified markdown files are rebuilt on change
+  "${source}/**/*.md": true,
+  
+  // template changes trigger a rebuild of all files 
+  "templates/**/*": "**/*", 
+
+  // changes to code examples rebuild all files in their respective parent directories
+  "${source}/**/code_examples/*": "${dirname}/../*", 
 }
 ```
 
 **Please note that**:
-- `${source}` is replaced by `metalsmith.source()`.
+- `${source}` can be used in the watched path configuration, and is replaced by `metalsmith.source()` 
 - _values of the map are relative to `metalsmith.source()`_ (because it's the only place where to build files)
 
 
