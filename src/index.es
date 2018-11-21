@@ -2,6 +2,8 @@ import {
   relative as relativePath,
   resolve as resolvePath,
   isAbsolute as isAbsolutePath,
+  dirname,
+  normalize as normalizePath,
 } from "path"
 
 import async from "async"
@@ -298,10 +300,26 @@ module.exports = function(options) {
           buildFiles(metalsmith, filesToUpdate, livereload, options, previousFilesMap)
         }
 
-        const patternsToUpdatePattern = Object.keys(patterns)
+        const patternsToUpdatePattern = []
+
+        Object.keys(patterns)
           .filter(pattern => patterns[pattern] !== true)
-          .filter(pattern => multimatch(pathsToUpdate, pattern).length > 0)
-          .map(pattern => patterns[pattern])
+          .forEach(pattern => {
+            if (patterns[pattern].includes("${dirname}")) {
+              patternsToUpdatePattern.push(...pathsToUpdate
+                .filter(pathToUpdate => multimatch(pathToUpdate, pattern).length > 0)
+                .map(pathToUpdate => {
+                  const
+                    absolutePath = dirname(resolvePath(metalsmith.directory(), pathToUpdate)),
+                    relativeToSrc = relativePath(metalsmith.source(), absolutePath)
+
+                  return normalizePath(patterns[pattern].replace("${dirname}", relativeToSrc))
+                })
+              )
+            } else if (multimatch(pathsToUpdate, pattern).length > 0) {
+              patternsToUpdatePattern.push(patterns[pattern])
+            }
+          })
 
         if (patternsToUpdatePattern.length) {
           buildPattern(metalsmith, patternsToUpdatePattern, livereload, options, previousFilesMap)
