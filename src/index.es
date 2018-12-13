@@ -83,14 +83,18 @@ function saveFilenameInFilesData(files) {
 function removeFilesFromCollection(files, collections) {
   const filenames = Object.keys(files)
   Object.keys(collections).forEach(key => {
-
-    for (let i = 0; i < collections[key].length; i++) {
-      if (filenames.indexOf(collections[key][i].filename) > -1) {
-        collections[key] = [
-          ...collections[key].slice(0, i),
-          ...collections[key].slice(i + 1),
-        ]
-        i--
+    if(typeof collections[key] === 'object' && !collections[key].hasOwnProperty('filename')) {
+      removeFilesFromCollection(files, collections[key]);
+    }
+    if(collections[key] !== undefined) {
+      for (let i = 0; i < collections[key].length; i++) {
+        if (filenames.indexOf(collections[key][i].filename) > -1) {
+          collections[key] = [
+            ...collections[key].slice(0, i),
+            ...collections[key].slice(i + 1),
+          ]
+          i--
+        }
       }
     }
   })
