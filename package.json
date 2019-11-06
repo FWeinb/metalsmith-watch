@@ -29,7 +29,7 @@
     "babel": "^5.1.13",
     "babel-eslint": "^3.0.1",
     "babel-tape-runner": "^1.1.0",
-    "eslint": "^0.20.0",
+    "eslint": "^6.6.0",
     "metalsmith": "^1.7.0",
     "mkdirp": "^0.5.0",
     "npmpub": "^3.1.0",
